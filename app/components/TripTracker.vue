@@ -1,5 +1,8 @@
 <template>
-    <div class="max-w-xl mx-auto p-4 bg-white shadow-md rounded-md">
+    <div class="max-w-xl mx-auto p-4 rounded-md shadow-md
+            bg-[var(--ui-bg)]
+            text-[var(--ui-text)]
+            border border-[var(--ui-border)]">
         <h2 class="text-2xl font-semibold mb-3">TaxiStand — Trip Tracker</h2>
 
         <form @submit.prevent="submit" class="space-y-4">
@@ -205,7 +208,7 @@ async function submit() {
     fd.append('end_coords', form.end_coords ? JSON.stringify(form.end_coords) : '');
     if (form.start_photo_file) fd.append('start_photo', form.start_photo_file);
     if (form.end_photo_file) fd.append('end_photo', form.end_photo_file);
-
+    console.log("Submitting form data:", [...fd.entries()]);
     try {
         const res = await fetch('/api/trips', {
             method: 'POST',

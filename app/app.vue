@@ -15,8 +15,8 @@ useHead({
   }
 })
 
-const title = 'Gramam'
-const description = 'A production-ready starter template powered by Nuxt UI. Build beautiful, accessible, and performant applications in minutes, not hours.'
+const title = 'Bike Taxi Stand'
+const description = 'Find nearby bike taxi stands quickly and easily.'
 
 useSeoMeta({
   title,
@@ -34,16 +34,12 @@ useSeoMeta({
     <UHeader>
       <template #left>
         <NuxtLink to="/">
-          <p>Gramam</p>
+          <p>Bike Taxi Stand</p>
         </NuxtLink>
-        <VillageSelector />
       </template>
 
       <template #right>
-        <UInput icon="i-lucide-search" size="md" variant="outline" placeholder="Search..." />
-        <LanguageSelector />
         <UColorModeButton />
-        <ULink as="button">{{ $t('contactUs') }}</ULink>
       </template>
     </UHeader>
 

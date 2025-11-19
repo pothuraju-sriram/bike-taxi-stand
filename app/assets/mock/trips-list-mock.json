@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "driver": "John Doe",
+    "passenger": "Jane Smith",
+    "start_location": "123 Main St",
+    "start_time": "2024-06-01T10:00:00Z",
+    "completed": false
+  },
+  {
+    "id": 2,
+    "driver": "Alice Johnson",
+    "passenger": "Bob Brown",
+    "start_location": "789 Oak St",
+    "end_location": "321 Pine St",
+    "start_time": "2024-06-01T11:00:00Z",
+    "end_time": "2024-06-01T11:20:00Z",
+    "fare": 12.5,
+    "completed": true
+  },
+  {
+    "id": 3,
+    "driver": "Charlie Davis",
+    "passenger": "Eve White",
+    "start_location": "654 Maple St",
+    "end_location": "987 Cedar St",
+    "start_time": "2024-06-01T12:00:00Z",
+    "end_time": "2024-06-01T12:45:00Z",
+    "fare": 20.0,
+    "completed": true
+  }
+]

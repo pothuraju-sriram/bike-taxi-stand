@@ -6,10 +6,8 @@
       <h1 class="text-3xl font-bold mb-6">TaxiStand Rides</h1>
 
       <!-- Start Trip Button -->
-      <button
-        @click="startNewTrip"
-        class="mb-6 w-full px-5 py-3 rounded bg-[var(--ui-primary)] text-white font-medium text-lg"
-      >
+      <button @click="startNewTrip"
+        class="mb-6 w-full px-5 py-3 rounded bg-[var(--ui-primary)] text-white font-medium text-lg">
         Start New Trip
       </button>
 
@@ -23,11 +21,8 @@
           <div class="text-[var(--ui-text-muted)]">No rides found.</div>
         </template>
 
-        <div
-          v-for="r in rides"
-          :key="r.id"
-          class="p-4 rounded border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] flex justify-between items-center"
-        >
+        <div v-for="r in rides" :key="r.id"
+          class="p-4 rounded border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] flex justify-between items-center">
           <div>
             <div class="font-semibold">Trip #{{ r.id }}</div>
             <div class="text-sm text-[var(--ui-text-muted)]">
@@ -37,21 +32,16 @@
 
           <div class="flex items-center gap-3">
             <!-- Status badge -->
-            <span
-              :class="[
-                'px-2 py-1 rounded text-sm',
-                r.completed ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
-              ]"
-            >
+            <span :class="[
+              'px-2 py-1 rounded text-sm',
+              r.completed ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'
+            ]">
               {{ r.completed ? 'Closed' : 'In Progress' }}
             </span>
 
             <!-- Continue button -->
-            <button
-              v-if="!r.completed"
-              @click="endTrip(r.id)"
-              class="px-3 py-1 rounded border border-[var(--ui-border)] text-sm cursor-pointer"
-            >
+            <button v-if="!r.completed" @click="endTrip(r.id)"
+              class="px-3 py-1 rounded border border-[var(--ui-border)] text-sm cursor-pointer">
               End trip
             </button>
           </div>
@@ -65,6 +55,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import tripsListMock from '../assets/mock/trips-list-mock.json' // Mock data for demo purposes
 
 const router = useRouter()
 const rides = ref([])
@@ -74,9 +65,12 @@ const loading = ref(true)
 onMounted(async () => {
   loading.value = true
   try {
-    const res = await fetch('/api/trips')
-    if (!res.ok) throw new Error()
-    rides.value = await res.json()        // <-- expected: an array of trips
+    // const res = await fetch('/api/trips')
+    // if (!res.ok) throw new Error()
+    // rides.value = await res.json()        // <-- expected: an array of trips
+    setTimeout(() => {
+      rides.value = tripsListMock // <-- mock data for demo purposes
+    }, 1000)
   } catch (err) {
     // fallback to local storage (simple)
     rides.value = loadLocalRides()
@@ -109,7 +103,7 @@ function loadLocalRides() {
         })
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // Completed (optional)
   try {
@@ -124,7 +118,7 @@ function loadLocalRides() {
         })
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   // Sort newest first
   return list.sort((a, b) => new Date(b.datetime) - new Date(a.datetime))

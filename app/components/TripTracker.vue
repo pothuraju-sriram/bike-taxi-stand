@@ -208,7 +208,6 @@ async function submit() {
     fd.append('end_coords', form.end_coords ? JSON.stringify(form.end_coords) : '');
     if (form.start_photo_file) fd.append('start_photo', form.start_photo_file);
     if (form.end_photo_file) fd.append('end_photo', form.end_photo_file);
-    console.log("Submitting form data:", [...fd.entries()]);
     try {
         const res = await fetch('/api/trips', {
             method: 'POST',

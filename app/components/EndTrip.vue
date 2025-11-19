@@ -11,8 +11,8 @@
 
             <!-- Show start data read-only -->
             <div class="p-3 rounded border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]">
-                <div><strong>Start coords:</strong> {{ trip.start_coords?.lat }}, {{ trip.start_coords?.lng }}</div>
-                <div><strong>Start odometer:</strong> {{ trip.odometer_start }} km</div>
+                <div><strong>Start coords:</strong> {{ trip.start_coordinates?.[0] }}, {{ trip.start_coordinates?.[1] }}</div>
+                <div><strong>Start odometer:</strong> {{ trip.start_odometer_reading }} km</div>
                 <div v-if="trip.start_photo_url" class="mt-2">
                     <img :src="trip.start_photo_url"
                         class="w-full h-40 object-contain border border-[var(--ui-border)] rounded bg-[var(--ui-bg-soft)]" />
@@ -36,7 +36,7 @@
 
             <div>
                 <label class="block text-sm font-medium">End odometer (km)</label>
-                <input v-model.number="odometer_end" type="number" min="0" step="0.1" required
+                <input v-model.number="end_odometer_reading" type="number" min="0" step="0.1" required
                     class="w-full rounded p-2 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)]" />
             </div>
 
@@ -49,7 +49,7 @@
 
             <div>
                 <label class="block text-sm font-medium">User Details (optional)</label>
-                <input v-model="user_name" type="text" placeholder="Name or phone"
+                <input v-model="passenger" type="text" placeholder="Name or phone"
                     class="w-full rounded p-2 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)]" />
             </div>
 
@@ -96,6 +96,10 @@ const route = useRoute();
 const router = useRouter();
 const id = route.params.id;
 
+const store = useTripsStore();
+const { fetchTrip, completeTrip } = store;
+
+
 const loading = ref(true);
 const trip = ref(null);
 const message = ref(null);
@@ -103,10 +107,10 @@ const message = ref(null);
 // end fields
 const lat = ref(null);
 const lng = ref(null);
-const odometer_end = ref(null);
+const end_odometer_reading = ref(null);
 const end_photo_file = ref(null);
 const preview = ref(null);
-const user_name = ref('');
+const passenger = ref('');
 const rating = ref(null);
 const comments = ref('');
 
@@ -118,12 +122,9 @@ async function loadTrip() {
     loading.value = true;
     message.value = null;
     try {
-        const res = await fetch(`/api/trips/${id}`);
-        if (res.status === 404) { trip.value = null; loading.value = false; return; }
-        if (!res.ok) throw new Error('Server error');
-        trip.value = await res.json();
-        // prefill lat/lng if available for convenience
-        if (trip.value.end_coords) { lat.value = trip.value.end_coords.lat; lng.value = trip.value.end_coords.lng; }
+        const result = await fetchTrip(id);
+        trip.value = result;
+        if (trip.value.end_coordinates) { lat.value = trip.value.end_coordinates[0]; lng.value = trip.value.end_coordinates[1]; }
         loading.value = false;
     } catch (err) {
         message.value = { type: 'error', text: 'Failed to load trip: ' + err.message };
@@ -161,41 +162,50 @@ function autofillCoords() {
     }, { enableHighAccuracy: true, timeout: 8000 });
 }
 
+const totalDistance = computed(()=>{
+    if (!trip.value || trip.value.start_odometer_reading == null || end_odometer_reading.value == null) return null;
+    const d = Number(end_odometer_reading.value) - Number(trip.value.start_odometer_reading);
+    return d >= 0 ? d : null;
+})
+
 const distanceDisplay = computed(() => {
-    if (!trip.value || trip.value.odometer_start == null || odometer_end.value == null) return '—';
-    const d = Number(odometer_end.value) - Number(trip.value.odometer_start);
+    if (!trip.value || trip.value.start_odometer_reading == null || end_odometer_reading.value == null) return '—';
+    const d = Number(end_odometer_reading.value) - Number(trip.value.start_odometer_reading);
     return d >= 0 ? d.toFixed(2) + ' km' : 'Invalid (end < start)';
 });
 
 async function onComplete() {
     message.value = null;
     if (lat.value == null || lng.value == null) { message.value = { type: 'error', text: 'Please fill end coordinates' }; return; }
-    if (odometer_end.value == null) { message.value = { type: 'error', text: 'Please fill end odometer' }; return; }
-    if (Number(odometer_end.value) < Number(trip.value.odometer_start)) { message.value = { type: 'error', text: 'End odometer < start odometer' }; return; }
+    if (end_odometer_reading.value == null) { message.value = { type: 'error', text: 'Please fill end odometer' }; return; }
+    if (Number(end_odometer_reading.value) < Number(trip.value.start_odometer_reading)) { message.value = { type: 'error', text: 'End odometer < start odometer' }; return; }
 
     const fd = new FormData();
-    fd.append('end_coords', JSON.stringify({ lat: lat.value, lng: lng.value }));
-    fd.append('odometer_end', odometer_end.value);
+    fd.append('end_coordinates', JSON.stringify({ lat: lat.value, lng: lng.value }));
+    fd.append('end_odometer_reading', end_odometer_reading.value);
     if (end_photo_file.value) fd.append('end_photo', end_photo_file.value);
-    fd.append('user_name', user_name.value || '');
+    fd.append('passenger', passenger.value || '');
     fd.append('rating', rating.value ?? '');
     fd.append('comments', comments.value || '');
 
     try {
-        const res = await fetch(`/api/trips/${id}`, { method: 'PATCH', body: fd });
-        if (!res.ok) throw new Error('Server error');
-        const json = await res.json();
-        message.value = { type: 'success', text: 'Trip completed.' };
-        // optional: redirect to a summary or home
+        await completeTrip(id, {
+            end_coordinates: [lat.value, lng.value],
+            end_odometer_reading: end_odometer_reading.value,
+            passenger: passenger.value || '',
+            fare: totalDistance.value * 4.5,
+            end_time: new Date().toISOString(),
+            complete: true
+        });
         setTimeout(() => router.push('/'), 800);
     } catch (err) {
         message.value = { type: 'error', text: 'Submit failed. Draft saved locally.' };
         // save local draft to finish later
         const localKey = `taxistand_end_draft_${id}`;
         const snapshot = {
-            end_coords: { lat: lat.value, lng: lng.value },
-            odometer_end: odometer_end.value,
-            user_name: user_name.value,
+            end_coordinates: { lat: lat.value, lng: lng.value },
+            end_odometer_reading: end_odometer_reading.value,
+            passenger: passenger.value,
             rating: rating.value,
             comments: comments.value,
             _previewEnd: preview.value || null,
@@ -208,9 +218,9 @@ async function onComplete() {
 function saveLocal() {
     const localKey = `taxistand_end_draft_${id}`;
     const snapshot = {
-        end_coords: { lat: lat.value, lng: lng.value },
-        odometer_end: odometer_end.value,
-        user_name: user_name.value,
+        end_coordinates: { lat: lat.value, lng: lng.value },
+        end_odometer_reading: end_odometer_reading.value,
+        passenger: passenger.value,
         rating: rating.value,
         comments: comments.value,
         _previewEnd: preview.value || null,

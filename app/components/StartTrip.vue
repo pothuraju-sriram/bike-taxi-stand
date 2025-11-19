@@ -24,7 +24,7 @@
 
             <div>
                 <label class="block text-sm font-medium">Start odometer (km)</label>
-                <input v-model.number="odometer_start" type="number" min="0" step="0.1" required
+                <input v-model.number="start_odometer_reading" type="number" min="0" step="0.1" required
                     class="w-full rounded p-2 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)]" />
             </div>
 
@@ -56,10 +56,13 @@ import { useRouter } from 'vue-router';
 
 const lat = ref(null);
 const lng = ref(null);
-const odometer_start = ref(null);
+const start_odometer_reading = ref(null);
 const start_photo_file = ref(null);
 const preview = ref(null);
 const message = ref(null);
+
+const store = useTripsStore();
+const { startNewTrip } = store;
 
 const router = useRouter();
 
@@ -88,30 +91,26 @@ function autofillCoords() {
 async function onStart() {
     message.value = null;
     if (lat.value == null || lng.value == null) { message.value = { type: 'error', text: 'Please provide start coordinates' }; return; }
-    if (odometer_start.value == null) { message.value = { type: 'error', text: 'Please provide start odometer' }; return; }
+    if (start_odometer_reading.value == null) { message.value = { type: 'error', text: 'Please provide start odometer' }; return; }
 
     const fd = new FormData();
     fd.append('start_coords', JSON.stringify({ lat: lat.value, lng: lng.value }));
-    fd.append('odometer_start', odometer_start.value);
+    fd.append('start_odometer_reading', start_odometer_reading.value);
     if (start_photo_file.value) fd.append('start_photo', start_photo_file.value);
 
     try {
-        const res = await fetch('/api/trips', { method: 'POST', body: fd });
-        if (!res.ok) {
-            const txt = await res.text();
-            throw new Error(txt || 'Server error');
-        }
-        const json = await res.json();
-        const id = json.id;
-        message.value = { type: 'success', text: 'Trip started (id: ' + id + '). Redirecting to end page...' };
-        // short delay for UX then navigate to end page
+        const id = await startNewTrip({
+            start_coordinates: [lat.value, lng.value],
+            start_odometer_reading: start_odometer_reading.value
+        });
+
         setTimeout(() => router.push(`/trips/${id}/end`), 700);
     } catch (err) {
         // fallback: save minimal local draft and show id placeholder
         const localDraft = {
             _localId: 'local-' + Date.now(),
             start_coords: { lat: lat.value, lng: lng.value },
-            odometer_start: odometer_start.value,
+            start_odometer_reading: start_odometer_reading.value,
             _previewStart: preview.value || null,
             created_at: new Date().toISOString()
         };
@@ -124,7 +123,7 @@ function saveLocal() {
     const localDraft = {
         _localId: 'local-' + Date.now(),
         start_coords: { lat: lat.value, lng: lng.value },
-        odometer_start: odometer_start.value,
+        start_odometer_reading: start_odometer_reading.value,
         _previewStart: preview.value || null,
         created_at: new Date().toISOString()
     };

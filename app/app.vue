@@ -1,7 +1,10 @@
 <script setup>
 import { SpeedInsights } from "@vercel/speed-insights/nuxt"
+import { onMounted } from 'vue'
 
 const { t } = useI18n()
+const store = useTripsStore()
+const { loadTrips } = store
 
 useHead({
   meta: [
@@ -26,6 +29,10 @@ useSeoMeta({
   ogImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
   twitterImage: 'https://ui.nuxt.com/assets/templates/nuxt/starter-light.png',
   twitterCard: 'summary_large_image'
+})
+
+onMounted(async () => {
+  await loadTrips()
 })
 </script>
 
